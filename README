@@ -1,3 +1,9 @@
+Build for Kobo
+--------------
+ CC=arm-linux-gcc CFLAGS="-I/chroot/usr/include" LDFLAGS="-L/chroot/usr/lib -lpthread -ldl" LIBS="-L/chroot/usr/lib" make DESTDIR=/chroot BINDIR=/bin
+
+
+
 wpa_supplicant and hostapd
 --------------------------
 
