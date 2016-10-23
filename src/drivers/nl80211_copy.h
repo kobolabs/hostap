@@ -874,6 +874,11 @@
  *	This will contain a %NL80211_ATTR_NAN_MATCH nested attribute and
  *	%NL80211_ATTR_COOKIE.
  *
+ * @NL80211_CMD_UPDATE_CONNECT_PARAMS: Update one or more connect parameters
+ *	for subsequent roaming cases if the driver or firmware uses internal
+ *	BSS selection. This command can be issued only while connected and it
+ *	does not result in a change for the current association.
+ *
  * @NL80211_CMD_MAX: highest used command number
  * @__NL80211_CMD_AFTER_LAST: internal use
  */
@@ -1068,6 +1073,8 @@ enum nl80211_commands {
 	NL80211_CMD_DEL_NAN_FUNCTION,
 	NL80211_CMD_CHANGE_NAN_CONFIG,
 	NL80211_CMD_NAN_MATCH,
+
+	NL80211_CMD_UPDATE_CONNECT_PARAMS,
 
 	/* add new commands above here */
 
@@ -1638,8 +1645,10 @@ enum nl80211_commands {
  *	the connection request from a station. nl80211_connect_failed_reason
  *	enum has different reasons of connection failure.
  *
- * @NL80211_ATTR_SAE_DATA: SAE elements in Authentication frames. This starts
- *	with the Authentication transaction sequence number field.
+ * @NL80211_ATTR_AUTH_DATA: Fields and elements in Authentication frames. This
+ *	starts with the Authentication transaction sequence number field and is
+ *	used with authentication algorithms that need special fields to be added
+ *	into the frames (SAE and FILS).
  *
  * @NL80211_ATTR_VHT_CAPABILITY: VHT Capability information element (from
  *	association request when used with NL80211_CMD_NEW_STATION)
@@ -1936,6 +1945,10 @@ enum nl80211_commands {
  *	attribute.
  * @NL80211_ATTR_NAN_MATCH: used to report a match. This is a nested attribute.
  *	See &enum nl80211_nan_match_attributes.
+ * @NL80211_ATTR_FILS_KEK: KEK for FILS (Re)Association Request/Response frame
+ *	protection.
+ * @NL80211_ATTR_FILS_NONCES: Nonces (part of AAD) for FILS (Re)Association
+ *	Request/Response frame protection.
  *
  * @NUM_NL80211_ATTR: total number of nl80211_attrs available
  * @NL80211_ATTR_MAX: highest attribute number currently defined
@@ -2195,7 +2208,7 @@ enum nl80211_attrs {
 
 	NL80211_ATTR_CONN_FAILED_REASON,
 
-	NL80211_ATTR_SAE_DATA,
+	NL80211_ATTR_AUTH_DATA,
 
 	NL80211_ATTR_VHT_CAPABILITY,
 
@@ -2336,6 +2349,9 @@ enum nl80211_attrs {
 	NL80211_ATTR_NAN_FUNC,
 	NL80211_ATTR_NAN_MATCH,
 
+	NL80211_ATTR_FILS_KEK,
+	NL80211_ATTR_FILS_NONCES,
+
 	/* add attributes here, update the policy in nl80211.c */
 
 	__NL80211_ATTR_AFTER_LAST,
@@ -2347,6 +2363,7 @@ enum nl80211_attrs {
 #define NL80211_ATTR_SCAN_GENERATION NL80211_ATTR_GENERATION
 #define	NL80211_ATTR_MESH_PARAMS NL80211_ATTR_MESH_CONFIG
 #define NL80211_ATTR_IFACE_SOCKET_OWNER NL80211_ATTR_SOCKET_OWNER
+#define NL80211_ATTR_SAE_DATA NL80211_ATTR_AUTH_DATA
 
 /*
  * Allow user space programs to use #ifdef on new attributes by defining them
@@ -3660,6 +3677,9 @@ enum nl80211_bss_status {
  * @NL80211_AUTHTYPE_FT: Fast BSS Transition (IEEE 802.11r)
  * @NL80211_AUTHTYPE_NETWORK_EAP: Network EAP (some Cisco APs and mainly LEAP)
  * @NL80211_AUTHTYPE_SAE: Simultaneous authentication of equals
+ * @NL80211_AUTHTYPE_FILS_SK: Fast Initial Link Setup shared key
+ * @NL80211_AUTHTYPE_FILS_SK_PFS: Fast Initial Link Setup shared key with PFS
+ * @NL80211_AUTHTYPE_FILS_PK: Fast Initial Link Setup public key
  * @__NL80211_AUTHTYPE_NUM: internal
  * @NL80211_AUTHTYPE_MAX: maximum valid auth algorithm
  * @NL80211_AUTHTYPE_AUTOMATIC: determine automatically (if necessary by
@@ -3672,6 +3692,9 @@ enum nl80211_auth_type {
 	NL80211_AUTHTYPE_FT,
 	NL80211_AUTHTYPE_NETWORK_EAP,
 	NL80211_AUTHTYPE_SAE,
+	NL80211_AUTHTYPE_FILS_SK,
+	NL80211_AUTHTYPE_FILS_SK_PFS,
+	NL80211_AUTHTYPE_FILS_PK,
 
 	/* keep last */
 	__NL80211_AUTHTYPE_NUM,
@@ -4634,6 +4657,8 @@ enum nl80211_feature_flags {
  *	configuration (AP/mesh) with HT rates.
  * @NL80211_EXT_FEATURE_BEACON_RATE_VHT: Driver supports beacon rate
  *	configuration (AP/mesh) with VHT rates.
+ * @NL80211_EXT_FEATURE_FILS: This driver supports Fast Initial Link Setup with
+ *	user space SME (NL80211_CMD_AUTHENTICATE) in station mode.
  *
  * @NUM_NL80211_EXT_FEATURES: number of extended features.
  * @MAX_NL80211_EXT_FEATURES: highest extended feature index.
@@ -4648,6 +4673,7 @@ enum nl80211_ext_feature_index {
 	NL80211_EXT_FEATURE_BEACON_RATE_LEGACY,
 	NL80211_EXT_FEATURE_BEACON_RATE_HT,
 	NL80211_EXT_FEATURE_BEACON_RATE_VHT,
+	NL80211_EXT_FEATURE_FILS,
 
 	/* add new features before the definition below */
 	NUM_NL80211_EXT_FEATURES,
